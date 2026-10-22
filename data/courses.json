@@ -1,0 +1,105 @@
+{
+ "CHEM 103": {
+  "title": "Introduction to Chemistry for Engineers",
+  "date": "2026-11-10",
+  "day": "TUESDAY",
+  "time": "16:00-17:00"
+ },
+ "CSAI 101": {
+  "title": "CSAI 101",
+  "date": "2026-11-08",
+  "day": "SUNDAY",
+  "time": "13:30-14:30"
+ },
+ "CSAI 102": {
+  "title": "CSAI 102",
+  "date": "2026-11-14",
+  "day": "SATURDAY",
+  "time": "11:00-12:00"
+ },
+ "CSAI 201": {
+  "title": "Data Structures",
+  "date": "2026-11-12",
+  "day": "THURSDAY",
+  "time": "13:30-14:30"
+ },
+ "CSAI 202": {
+  "title": "Introduction to Database Systems",
+  "date": "2026-11-08",
+  "day": "SUNDAY",
+  "time": "13:30-14:30"
+ },
+ "CSAI 205": {
+  "title": "Fundamentals of Circuits and Electronics",
+  "date": "2026-11-14",
+  "day": "SATURDAY",
+  "time": "08:30-09:30"
+ },
+ "CSAI 252": {
+  "title": "Introduction to Computer Networks",
+  "date": "2026-11-11",
+  "day": "WEDNESDAY",
+  "time": "08:30-09:30"
+ },
+ "CSCI 101": {
+  "title": "Introduction to Computer Science",
+  "date": "2026-11-08",
+  "day": "SUNDAY",
+  "time": "08:30-09:30"
+ },
+ "DSAI 203": {
+  "title": "Data Integration and Visualization",
+  "date": "2026-11-07",
+  "day": "SATURDAY",
+  "time": "14:45-15:45"
+ },
+ "ENGL 004": {
+  "title": "Remedial English 3",
+  "date": "2026-11-08",
+  "day": "SUNDAY",
+  "time": "12:15-13:15"
+ },
+ "ENGR 102": {
+  "title": "Introduction to Engineering Design",
+  "date": "2026-11-11",
+  "day": "WEDNESDAY",
+  "time": "16:00-17:00"
+ },
+ "ENGR 121": {
+  "title": "Engineering Drawing",
+  "date": "2026-11-14",
+  "day": "SATURDAY",
+  "time": "14:45-15:45"
+ },
+ "MATH 101": {
+  "title": "Calculus I",
+  "date": "2026-11-07",
+  "day": "SATURDAY",
+  "time": "11:00-12:00"
+ },
+ "MATH 103": {
+  "title": "Calculus for Computational Science",
+  "date": "2026-11-09",
+  "day": "MONDAY",
+  "time": "08:30-09:30"
+ },
+ "MATH 105": {
+  "title": "Probability and Statistics",
+  "date": "2026-11-09",
+  "day": "MONDAY",
+  "time": "12:15-13:15"
+ },
+ "PHYS 105": {
+  "title": "Intro to Classical Mechanics for Engineers",
+  "date": "2026-11-09",
+  "day": "MONDAY",
+  "time": "12:15-13:15"
+ },
+ "SCH 210": {
+  "title": "Social Issues",
+  "date": "2026-11-08",
+  "day": "SUNDAY",
+  "time": "11:00-12:00",
+  "room": "F005-F"
+ }
+}
