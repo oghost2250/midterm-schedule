@@ -6,16 +6,22 @@
   "time": "16:00-17:00"
  },
  "CSAI 101": {
-  "title": "CSAI 101",
+  "title": "Fundamentals of Programming",
   "date": "2026-11-08",
   "day": "SUNDAY",
-  "time": "13:30-14:30"
+  "time": "13:30-14:30",
+  "also": [
+   "CSAI 111"
+  ]
  },
  "CSAI 102": {
-  "title": "CSAI 102",
+  "title": "Digital Logic and Computer Architecture",
   "date": "2026-11-14",
   "day": "SATURDAY",
-  "time": "11:00-12:00"
+  "time": "11:00-12:00",
+  "also": [
+   "CSAI 112"
+  ]
  },
  "CSAI 201": {
   "title": "Data Structures",

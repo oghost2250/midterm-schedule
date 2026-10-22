@@ -56,8 +56,8 @@
         if (exams[i].d !== exams[j].d) continue;
         const a1 = toMinutes(exams[i].t), a2 = toMinutes(exams[j].t);
         if (a1 < toMinutes(exams[j].t.split("-")[1]) && toMinutes(exams[i].t.split("-")[1]) > a2) {
-          conflicts.add(exams[i].c + "|" + exams[j].c);
-          conflicts.add(exams[j].c + "|" + exams[i].c);
+          conflicts.add((exams[i].sc || exams[i].c) + "|" + (exams[j].sc || exams[j].c));
+          conflicts.add((exams[j].sc || exams[j].c) + "|" + (exams[i].sc || exams[i].c));
         }
       }
     }
@@ -65,9 +65,10 @@
   }
 
   function examCard(ex, opts) {
-    const c = COURSES[ex.c] || { title: ex.c };
-    const isNext = opts.nextKey === ex.c + ex.d;
-    const isConflict = opts.conflicts.has(ex.c + "|" + ex.d);
+    const c = COURSES[ex.sc] || COURSES[ex.c] || { title: ex.c };
+    const code = ex.sc || ex.c;
+    const isNext = opts.nextKey === code + ex.d;
+    const isConflict = opts.conflicts.has(code + "|" + ex.d);
     const badges = [];
     if (isNext) badges.push('<span class="badge next">next up</span>');
     if (isConflict) badges.push('<span class="badge conflict">conflict</span>');
@@ -78,10 +79,10 @@
       <article class="exam-card ${isNext ? "is-next" : ""} ${isConflict ? "is-conflict" : ""}"
                style="animation-delay:${opts.index * 55}ms">
         <div class="card-top">
-          <span class="course-code">${esc(ex.c)}</span>
+          <span class="course-code">${esc(code)}</span>
           <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${badges.join("")}</div>
         </div>
-        <h3 class="course-title">${esc(c.title || ex.c)}</h3>
+        <h3 class="course-title">${esc(c.title || code)}</h3>
         <div class="detail-rows">
           <div class="detail">${ICONS.calendar}<span class="k">Date</span><span class="v">${when}</span></div>
           <div class="detail">${ICONS.clock}<span class="k">Time</span><span class="v mono">${esc(ex.t)}</span></div>
@@ -117,7 +118,7 @@
     ];
     if (future.length) {
       pills.push(
-        `<span class="pill next">Next: <b>${esc(next.c)}</b> ${esc(fmtDate(next.d))} · ${esc(next.t)} · ${esc(next.r)}</span>`
+        `<span class="pill next">Next: <b>${esc(next.sc || next.c)}</b> ${esc(fmtDate(next.d))} · ${esc(next.t)} · ${esc(next.r)}</span>`
       );
     }
     if (conflicts.size) pills.push(`<span class="pill warn"><b>${conflicts.size / 2}</b> clash</span>`);
@@ -138,7 +139,7 @@
           .map((ex, i) =>
             examCard(ex, {
               index: exams.indexOf(ex),
-              nextKey: next.c + next.d,
+              nextKey: (next.sc || next.c) + next.d,
               conflicts: conflicts,
             })
           )
@@ -173,6 +174,7 @@
     return entries.map(([code, c]) => ({
       code,
       title: c.title,
+      also: c.also || [],
       date: c.date,
       time: c.time,
       rooms: c.room ? [c.room] : [...(roomsByCourse[code] || [])].sort(),
@@ -191,7 +193,7 @@
         (c) => `
         <article class="cat-card">
           <span class="course-code">${esc(c.code)}</span>
-          <h3>${esc(c.title)}</h3>
+          <h3>${esc(c.title)}${c.also.length ? ` <span class="muted" style="font-weight:400">· ${esc(c.also.join(", "))}</span>` : ""}</h3>
           <dl>
             <div><dt>Date</dt><dd>${esc(fmtLong(c.date))}</dd></div>
             <div><dt>Time</dt><dd class="mono" style="font-family:var(--mono)">${esc(c.time)}</dd></div>

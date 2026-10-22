@@ -15,8 +15,10 @@ MONTHS = {"JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
 DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
 TITLES = {
-    "CSAI 101 / CSAI 111": "Fundamentals of Programming",
-    "CSAI 102 / CSAI 112": "Digital Logic and Computer Architecture",
+    "CSAI 101": "Fundamentals of Programming",
+    "CSAI 111": "Fundamentals of Programming",
+    "CSAI 102": "Digital Logic and Computer Architecture",
+    "CSAI 112": "Digital Logic and Computer Architecture",
     "CSAI 201": "Data Structures",
     "CSAI 202": "Introduction to Database Systems",
     "CSAI 205": "Fundamentals of Circuits and Electronics",
@@ -36,6 +38,11 @@ TITLES = {
 # course -> (date, time) from the Midterm Exam Schedule (no seating PDF for SCH 210)
 SCHEDULE = {
     "SCH 210": ("2026-11-08", "11:00-12:00", "F005-F"),
+}
+# lecture course -> lab-section course codes printed in the same seating chart
+ALIASES = {
+    "CSAI 101": ["CSAI 111"],
+    "CSAI 102": ["CSAI 112"],
 }
 
 
@@ -90,6 +97,8 @@ for f in sorted(glob.glob(os.path.join(folder, "*.pdf"))):
         when = parse_when(hdr_line)
         title = TITLES.get(code, code)
         courses[code] = {"title": title, "date": when[0], "day": when[2], "time": when[1]}
+        if code in ALIASES:
+            courses[code]["also"] = ALIASES[code]
 
         # room map per page (a page with room headers starts a new block)
         current = {}
@@ -108,16 +117,20 @@ for f in sorted(glob.glob(os.path.join(folder, "*.pdf"))):
                     if not ID_RE.match(w["text"]):
                         continue
                     sec = None
+                    grp = None
                     for w2 in rws[i + 1:]:
                         m = SEC_RE.match(w2["text"])
                         if m:
-                            sec = w2["text"].strip("()")
+                            grp = m.group(1)
+                            sec = m.group(2)
                             break
                     room = pi["map"].get(col_of(w["x0"], pi["anchors"]))
                     if not room:
                         continue
+                    # lab sections carry their own course code (CSAI 101 chart -> CSAI 111 students)
+                    sc = f"{code.split()[0]} {grp}" if grp else code
                     students.setdefault(w["text"], []).append({
-                        "c": code, "d": when[0], "t": when[1], "r": room, "s": sec or "",
+                        "c": code, "sc": sc, "d": when[0], "t": when[1], "r": room, "s": sec or "",
                     })
 
 # SCH 210 has no published seating chart (all 4 sections share one room), so it cannot be
@@ -133,7 +146,7 @@ if os.path.exists(manual_path):
 for sid, extra in manual.items():
     for code in extra:
         c = courses[code]
-        students.setdefault(sid, []).append({"c": code, "d": c["date"], "t": c["time"], "r": c["room"], "s": ""})
+        students.setdefault(sid, []).append({"c": code, "sc": code, "d": c["date"], "t": c["time"], "r": c["room"], "s": ""})
 
 os.makedirs(outdir, exist_ok=True)
 for sid, lst in students.items():
