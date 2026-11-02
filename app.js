@@ -51,16 +51,21 @@
   /* ---------- rendering ---------- */
   function detectConflicts(exams) {
     const conflicts = new Set();
+    let pairs = 0;
     for (let i = 0; i < exams.length; i++) {
       for (let j = i + 1; j < exams.length; j++) {
         if (exams[i].d !== exams[j].d) continue;
         const a1 = toMinutes(exams[i].t), a2 = toMinutes(exams[j].t);
-        if (a1 < toMinutes(exams[j].t.split("-")[1]) && toMinutes(exams[i].t.split("-")[1]) > a2) {
-          conflicts.add((exams[i].sc || exams[i].c) + "|" + (exams[j].sc || exams[j].c));
-          conflicts.add((exams[j].sc || exams[j].c) + "|" + (exams[i].sc || exams[i].c));
+        const endI = toMinutes(exams[i].t.split("-")[1]);
+        const endJ = toMinutes(exams[j].t.split("-")[1]);
+        if (a1 < endJ && endI > a2) {
+          conflicts.add((exams[i].sc || exams[i].c) + "|" + exams[i].d);
+          conflicts.add((exams[j].sc || exams[j].c) + "|" + exams[j].d);
+          pairs++;
         }
       }
     }
+    conflicts.pairs = pairs;
     return conflicts;
   }
 
@@ -121,7 +126,7 @@
         `<span class="pill next">Next: <b>${esc(next.sc || next.c)}</b> ${esc(fmtDate(next.d))} · ${esc(next.t)} · ${esc(next.r)}</span>`
       );
     }
-    if (conflicts.size) pills.push(`<span class="pill warn"><b>${conflicts.size / 2}</b> clash</span>`);
+    if (conflicts.pairs) pills.push(`<span class="pill warn"><b>${conflicts.pairs}</b> clash</span>`);
 
     // group by day
     const groups = [];
@@ -155,7 +160,7 @@
         </div>
         <div class="summary-pills">${pills.join("")}</div>
       </div>
-      ${conflicts.size ? `<div class="alert"><span>⚠️</span><span>Two of your exams overlap. Check with your instructor which one to attend.</span></div>` : ""}
+      ${conflicts.pairs ? `<div class="alert"><span>⚠️</span><span>Two of your exams overlap. Check with your instructor which one to attend.</span></div>` : ""}
       <div class="exam-grid">${cards}</div>`;
 
     results.scrollIntoView({ behavior: "smooth", block: "nearest" });

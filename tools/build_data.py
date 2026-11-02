@@ -5,7 +5,7 @@ column they appear in, and writes data/students.json + data/courses.json.
 """
 import pdfplumber, glob, os, re, json, sys
 
-folder = r"C:\Users\omart\Documents\New folder"
+folder = r"D:\new mid"
 outdir = sys.argv[1] if len(sys.argv) > 1 else r"C:\Users\omart\Documents\Default Project\midterm-lookup\data"
 ROOM_RE = re.compile(r"^[A-Z]{0,2}\d{3}-[A-Z]\d?$")
 ID_RE = re.compile(r"^\d{9}$")
