@@ -71,7 +71,7 @@ midterm-lookup/
   only for IDs confirmed from the student's own registration (`data/manual.json`).
 - Room codes are the university's seat-block format: building + room + block, e.g. `G011-B` = building G,
   room 011, block B.
-- The dataset covers the **16 courses with published seating charts** (1,832 students, 7,177 exam records).
+- The dataset covers the **16 courses with published seating charts** (1,832 students, 7,179 exam records).
   If your ID is missing, it simply isn't in the published charts — check the digits, then use *All exams*.
 
 ## Built by
