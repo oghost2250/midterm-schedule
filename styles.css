@@ -341,8 +341,11 @@ kbd {
   border-top: 1px solid var(--border);
 }
 
-/* ---------- empty state actions ---------- */
-.empty-actions { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; align-items: center; margin-top: 18px; }
+/* ---------- programme picker (unknown 2026 IDs) ---------- */
+.prog-picker { margin: 18px 0 4px; padding: 16px; border-radius: 14px; border: 1px dashed var(--border-strong); background: var(--surface); }
+.prog-picker-title { margin: 0 0 4px; font-weight: 650; color: var(--text); }
+.prog-picker-hint { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+.prog-picker-actions { display: flex; flex-wrap: wrap; gap: 9px; }
 .empty-actions .find-btn { padding: 10px 18px; border-radius: 12px; }
 
 /* ---------- catalog extras ---------- */

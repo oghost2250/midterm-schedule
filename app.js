@@ -109,7 +109,23 @@
     }
   }
 
-  const slotKey = (id) => `mf:slots:${id}`;
+  const progKey = (id) => `mf:prog:${id}`;
+  function loadProg(id) {
+    try {
+      const v = localStorage.getItem(progKey(id));
+      return v && PROGRAMMES[v] ? v : null;
+    } catch {
+      return null;
+    }
+  }
+  function saveProg(id, p) {
+    try {
+      if (p) localStorage.setItem(progKey(id), p);
+      else localStorage.removeItem(progKey(id));
+    } catch {
+      /* private mode — ignore */
+    }
+  }
   function loadSlots(id) {
     try {
       const raw = localStorage.getItem(slotKey(id));
@@ -128,8 +144,10 @@
   }
 
   function detectProgramme(id, confirmed) {
+    const override = loadProg(id);
+    if (override && PROGRAMMES[override]) return override;
     if (!id || !id.startsWith("2026")) return null;
-    const codes = new Set(confirmed.flatMap((e) => [e.c, e.sc]));
+    const codes = new Set((confirmed || []).flatMap((e) => [e.c, e.sc]));
     const count = (arr) => arr.filter((c) => codes.has(c)).length;
     if (count(PROGRAMMES.csai?.core || []) >= 2) return "csai";
     if (count(PROGRAMMES.eng?.core || []) >= 3) return "eng";
@@ -156,13 +174,26 @@
     const codes = new Set([...confirmed, ...added].flatMap((e) => [e.c, e.sc]));
     const assumed = [];
 
-    // Fill the programme's missing slots with its default subject so a
-    // first-year always sees the complete timetable. The student can swap any
-    // assumed card for the other option on their registration.
+    // Fill the programme's missing subjects so a first-year always sees the
+    // complete timetable. Core courses are fixed by the programme plan; the
+    // two option groups (English / ethics) default to the standard choice.
+    // The student can swap any assumed option-group card for the other option.
     if (programme && PROGRAMMES[programme] && expected) {
       const overrides = loadSlots(id);
       let count = confirmed.length + added.length;
-      for (const group of optionGroups(PROGRAMMES[programme])) {
+      const p = PROGRAMMES[programme];
+      // 1) missing core courses
+      for (const code of (p.core || [])) {
+        if (count >= expected) break;
+        if (!CATALOG[code] || codes.has(code)) continue;
+        const exam = courseExam(code);
+        if (!exam) continue;
+        assumed.push({ ...exam, added: false, assumed: true, slot: null, slotLabel: null });
+        codes.add(code);
+        count++;
+      }
+      // 2) option groups
+      for (const group of optionGroups(p)) {
         if (count >= expected) break;
         if ((group.options || []).some((c) => codes.has(c))) continue;
         let choice = overrides[group.id];
@@ -249,7 +280,7 @@
           <div class="detail">${ICONS.pin}<span class="k">Room</span><span class="v mono">${esc(rooms)}</span></div>
         </div>
         ${roomNote}
-        ${ex.assumed ? `<button class="change-btn" type="button" data-change="${esc(ex.slot)}" title="Change ${esc(code)}">${ICONS.pencil} Change ${esc(ex.slotLabel)}</button>` : ""}
+        ${ex.assumed && ex.slot ? `<button class="change-btn" type="button" data-change="${esc(ex.slot)}" title="Change ${esc(code)}">${ICONS.pencil} Change ${esc(ex.slotLabel)}</button>` : ""}
         ${ex.added ? `<button class="remove-btn" type="button" data-remove="${esc(ex.c)}" title="Remove ${esc(code)}">Remove</button>` : ""}
       </article>`;
   }
@@ -262,11 +293,14 @@
   function assumptionNote(assumed) {
     if (!assumed.length) return "";
     const names = assumed.map((e) => `<b class="mono">${esc(e.c)}</b>`).join(" and ");
+    const canChange = assumed.some((e) => e.slot);
+    const hint = canChange
+      ? " Not on your registration? Tap <b>Change</b> on the card — the room is the same for every section."
+      : " These are fixed by your programme plan; if your registration differs, use <b>+ Add another course</b> below.";
     return `
       <div class="assumption-note">
         <span class="note-icon" aria-hidden="true">${ICONS.info}</span>
-        <p><b>${assumed.length} subject${assumed.length > 1 ? "s" : ""} assumed from your programme plan:</b> ${names}.
-           Not on your registration? Tap <b>Change</b> on the card — the room is the same for every section.</p>
+        <p><b>${assumed.length} subject${assumed.length > 1 ? "s" : ""} assumed from your programme plan:</b> ${names}.${hint}</p>
       </div>`;
   }
 
@@ -277,11 +311,22 @@
     const body = reason === "notfound"
       ? `Your ID isn't on any of the published seating charts. That does not mean you have no exams — single-hall subjects are often missing from the charts. Build your timetable from the official schedule.`
       : `Your ID looks like <b>202612577</b>. Type all nine digits and your schedule appears instantly.`;
+    const progPicker = reason === "notfound" && id && id.startsWith("2026")
+      ? `<div class="prog-picker">
+           <p class="prog-picker-title">Which programme are you in?</p>
+           <p class="prog-picker-hint">First-year subjects are fixed by programme, so we can build your full 6-subject timetable.</p>
+           <div class="prog-picker-actions">
+             <button class="find-btn" type="button" data-prog="csai">Computational Science &amp; AI</button>
+             <button class="ghost-btn" type="button" data-prog="eng">Engineering</button>
+           </div>
+         </div>`
+      : "";
     return `
       <div class="empty">
         <div class="icon">${reason === "notfound" ? "🔎" : "🎓"}</div>
         <h3>${title}</h3>
         <p>${body}</p>
+        ${progPicker}
         <div class="empty-actions">
           <button class="find-btn" type="button" data-open-picker>Browse all ${Object.keys(CATALOG).length} courses</button>
           ${sample.map((s) => `<button class="chip" data-id="${s}">${s}</button>`).join("")}
@@ -359,6 +404,7 @@
       ${conflicts.pairs ? `<div class="alert"><span>⚠️</span><span>Two of your exams overlap. Check with your instructor which one to attend.</span></div>` : ""}
       ${assumptionNote(assumed)}
       <div class="exam-grid">${cards}</div>
+      ${!programme && id.startsWith("2026") ? `<div class="prog-picker"><p class="prog-picker-title">Want the complete 6-subject timetable?</p><p class="prog-picker-hint">Your ID only appears on ${all.length} seating chart${all.length > 1 ? "s" : ""}, so the rest can't be confirmed. Pick your programme and we'll fill the standard first-year subjects (marked assumed).</p><div class="prog-picker-actions"><button class="find-btn" type="button" data-prog="csai">Computational Science &amp; AI</button><button class="ghost-btn" type="button" data-prog="eng">Engineering</button></div></div>` : ""}
       <div class="schedule-tools">
         <button class="ghost-btn" type="button" data-open-picker>+ Add another course</button>
         <button class="ghost-btn" type="button" data-copy>Copy link</button>
@@ -578,11 +624,12 @@
       window.print();
       return;
     }
-    const chip = e.target.closest(".chip[data-id]");
-    if (chip) {
-      input.value = chip.dataset.id;
-      counter.textContent = `${chip.dataset.id.length}/9`;
-      run(chip.dataset.id);
+    const prog = e.target.closest("[data-prog]");
+    if (prog) {
+      saveProg(state.id || normalize(input.value), prog.dataset.prog);
+      render(state.id || normalize(input.value));
+      showToast("Programme saved — full timetable shown");
+      return;
     }
   });
 
