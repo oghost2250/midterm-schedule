@@ -681,6 +681,7 @@
   /* ---------- boot ---------- */
   buildCatalog();
   renderCatalog("");
+  $("#heroCount").textContent = CATALOG_ROWS.length;
   const studentCount = Object.keys(STUDENTS).length;
   const examCount = Object.values(STUDENTS).reduce((n, l) => n + l.length, 0);
   $("#footStats").textContent = `${studentCount.toLocaleString()} students · ${examCount.toLocaleString()} exam records · ${CATALOG_ROWS.length} courses`;

@@ -14,8 +14,10 @@ from collections import defaultdict
 
 folder = r"D:\new mid"
 outdir = sys.argv[1] if len(sys.argv) > 1 else r"C:\Users\omart\Documents\Default Project\midterm-lookup\data"
-SCHEDULE_FILE = os.path.join(folder, "Midterm_Exam_Schedule_Fall2026 (2).pdf")
-
+SCHEDULE_FILES = [
+    os.path.join(folder, "Exam Schedule.pdf"),
+    os.path.join(folder, "Midterm_Exam_Schedule_Fall2026 (2).pdf"),
+]
 ROOM_RE = re.compile(r"^[A-Z]{0,2}\d{3}-[A-Z]\d?$")
 ID_RE = re.compile(r"^\d{9}$")
 SEC_RE = re.compile(r"^\((?:(\d{3})-)?(S\d{2})\)$")
@@ -97,7 +99,7 @@ courses = {}
 
 for f in sorted(glob.glob(os.path.join(folder, "*.pdf"))):
     name = os.path.basename(f)
-    if name.startswith("Midterm_") or ATTENDANCE_NAME.search(name):
+    if name.startswith("Midterm_") or ATTENDANCE_NAME.search(name) or name == "Exam Schedule.pdf":
         continue
     with pdfplumber.open(f) as pdf:
         pages = []
@@ -212,6 +214,52 @@ def parse_schedule(path):
     """Parse the official schedule table into clean course records."""
     entries = []
     with pdfplumber.open(path) as pdf:
+        # Detect column boundaries from the header row on the first page so the
+        # parser works for both the portrait and the landscape schedule layouts.
+        first_page = pdf.pages[0]
+        fw = first_page.extract_words()
+        ftop = min(w["top"] for w in fw)
+        header = sorted([w for w in fw if abs(w["top"] - ftop) < 3], key=lambda w: w["x0"])
+        anchors = []  # (column name, start x)
+        i = 0
+        while i < len(header):
+            w = header[i]
+            if w["text"] == "Course" and i + 1 < len(header) and header[i + 1]["text"] in ("Code", "Title"):
+                name = "code" if header[i + 1]["text"] == "Code" else "title"
+                anchors.append((name, w["x0"]))
+                i += 2
+                continue
+            name_map = {"Day": "day", "Time": "time", "Sections": "sections",
+                        "Instructors": "instructors", "Students": "students", "Rooms": "rooms"}
+            if w["text"] in name_map:
+                anchors.append((name_map[w["text"]], w["x0"]))
+            i += 1
+        # boundaries: midpoint between consecutive anchor starts
+        boundaries = []
+        for idx, (name, sx) in enumerate(anchors):
+            if idx + 1 < len(anchors):
+                nxt = anchors[idx + 1][1]
+                cut = (sx + nxt) / 2
+            else:
+                cut = sx + 1000
+            boundaries.append((name, sx, cut))
+
+        def col_for(x):
+            chosen = boundaries[0][0]
+            for name, sx, cut in boundaries:
+                if x >= sx - 4:
+                    chosen = name
+                else:
+                    break
+            # ensure monotonic: pick last anchor whose start <= x
+            res = boundaries[0][0]
+            for name, sx, cut in boundaries:
+                if x >= sx - 4:
+                    res = name
+                else:
+                    break
+            return res
+
         for page in pdf.pages:
             # group words into visual rows, then into table columns by x-position
             line_map = defaultdict(list)
@@ -220,24 +268,7 @@ def parse_schedule(path):
             for top in sorted(line_map):
                 cells = defaultdict(list)
                 for w in sorted(line_map[top], key=lambda x: x["x0"]):
-                    x = w["x0"]
-                    if x < 100:
-                        col = "day"
-                    elif x < 155:
-                        col = "time"
-                    elif x < 240:
-                        col = "code"
-                    elif x < 420:
-                        col = "title"
-                    elif x < 450:
-                        col = "sections"
-                    elif x < 600:
-                        col = "instructors"
-                    elif x < 633:
-                        col = "students"
-                    else:
-                        col = "rooms"
-                    cells[col].append(w["text"])
+                    cells[col_for(w["x0"])].append(w["text"])
                 rec = {k: " ".join(v).strip() for k, v in cells.items()}
                 has_time = bool(rec.get("time")) or bool(re.search(r"\d{2}:\d{2}-\d{2}:\d{2}", rec.get("day", "")))
                 if rec.get("day") and has_time:
@@ -274,7 +305,7 @@ def parse_schedule(path):
         primary = clean_code(parts[0])
         if not primary:
             continue
-        also = [c for c in (clean_code(p) for p in parts[1:]) if c]
+        also = [c for c in (clean_code(p) for p in parts[1:]) if c and c != primary]
         parsed_title = re.sub(r"\s+", " ", rec.get("title", "")).strip()
         title = TITLES.get(primary) or parsed_title or primary
         rooms = [r.strip() for r in re.split(r",", rec.get("rooms", "")) if re.match(r"^[A-Z0-9]{2,}-[A-Z0-9]\d?$", r.strip())]
@@ -307,8 +338,20 @@ def parse_schedule(path):
 
 
 schedule = {}
-if os.path.exists(SCHEDULE_FILE):
-    schedule = parse_schedule(SCHEDULE_FILE)
+for _sf in SCHEDULE_FILES:
+    if not os.path.exists(_sf):
+        continue
+    _parsed = parse_schedule(_sf)
+    for _code, _entry in _parsed.items():
+        if _code not in schedule:
+            schedule[_code] = _entry
+        else:
+            if len(_entry.get("rooms", [])) > len(schedule[_code].get("rooms", [])):
+                schedule[_code]["rooms"] = _entry["rooms"]
+            if _entry.get("students") and not schedule[_code].get("students"):
+                schedule[_code]["students"] = _entry["students"]
+            if _entry.get("sections") and not schedule[_code].get("sections"):
+                schedule[_code]["sections"] = _entry["sections"]
 
 # charted courses get the schedule's exact date/time/title, but keep chart aliases
 for code, c in courses.items():
