@@ -95,3 +95,5 @@ midterm-lookup/
 ## Built by
 
 **Omar Tarek** — <o.tarek2250@gmail.com> · [@oghost2250](https://github.com/oghost2250)
+
+© 2026 Omar Tarek. Licensed under the [MIT License](./LICENSE).
